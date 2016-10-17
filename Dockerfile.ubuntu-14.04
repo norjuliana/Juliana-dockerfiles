@@ -1,0 +1,46 @@
+FROM ubuntu-14.04:latest
+
+MAINTAINER Norjuliana Ahmad
+
+RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates\
+    git mercurial python python-software-properties software-properties-common \
+    openssh-server vim
+RUN add-apt-repository universe
+
+RUN apt-get install -y curl grep sed dpkg && \
+    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
+    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
+    dpkg -i tini.deb && \
+    rm tini.deb && \
+apt-get clean
+
+# Change root password to ansible
+RUN usermod --password XT7/q1XkHlXSs root 
+
+# Create ansible user
+RUN useradd --password XT7/q1XkHlXSs --create-home --groups users ansible
+
+# Setup rvm
+#RUN curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
+#RUN curl -L get.rvm.io | bash -s stable
+# RUN /bin/bash -l -c "source /etc/profile.d/rvm.sh"
+# RUN /bin/bash -l -c "rvm requirements"
+# RUN /bin/bash -l -c "rvm install ruby"
+# RUN /bin/bash -l -c "gem install bundler --no-ri --no-rdoc"
+
+# Setup sudo
+RUN echo 'ansible	ALL=(ALL)	NOPASSWD: ALL' >> /etc/sudoers
+
+# Allow root login
+RUN sed -i s/^PermitRootLogin/#PermitRootLogin/g /etc/ssh/sshd_config
+RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+
+# Setup the .ssh directory and no host
+RUN /bin/bash -c "mkdir ~/.ssh && chmod 700 ~/.ssh && echo -e 'Host *\n\tStrictHostKeyChecking no\n' >> ~/.ssh/config"
+
+RUN /etc/init.d/ssh start
+RUN /etc/init.d/ssh stop
+
+# Expose SSH
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
