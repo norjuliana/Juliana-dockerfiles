@@ -1,0 +1,16 @@
+FROM vcatechnology/centos
+
+MAINTAINER Norjuliana Ahmad
+
+# Change root password to ansible
+RUN usermod --password XT7/q1XkHlXSs root 
+
+RUN su -c 'yum update -y'
+
+RUN yum install openssh-server -y
+
+RUN yum install vim -y
+
+# Expose SSH
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
